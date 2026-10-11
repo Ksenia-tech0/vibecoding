@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Мини-курс Python (аналог FreeCodeCamp)</title>
+  <style>
+    :root { --primary: #4285f4; --bg: #f5f7fa; --text: #333; --code-bg: #1e1e1e; --code-text: #d4d4d4; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: var(--bg); color: var(--text); }
+    header { padding: 1rem 1.5rem; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.1); display: flex; justify-content: space-between; align-items: center; }
+    h1 { margin: 0; font-size: 1.25rem; }
+    nav ul { list-style: none; display: flex; gap: 0.5rem; margin: 0; padding: 0; }
+    nav a { text-decoration: none; color: var(--text); padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; }
+    nav a.active { background: var(--primary); color: #fff; }
+    main { padding: 1.5rem; max-width: 960px; margin: 0 auto; }
+    .lesson { display: none; animation: fadeIn 0.3s ease; }
+    .lesson.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+    .panel { background: #fff; padding: 1.2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.06); height: 100%; }
+    .panel h2 { margin-top: 0; color: var(--primary); }
+    textarea { width: 100%; height: 240px; padding: 1rem; border: 1px solid #ddd; border-radius: 8px; background: var(--code-bg); color: var(--code-text); font-family: ui-monospace, SFMono, Menlo, monospace; resize: vertical; box-sizing: border-box; }
+    button { background: var(--primary); color: #fff; border: none; padding: 0.6rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 500; }
+    button:hover { opacity: 0.9; }
+    pre { background: #f8f9fa; padding: 1rem; border-radius: 6px; overflow-x: auto; margin: 0; }
+    code { font-family: ui-monospace, SFMono, Menlo, monospace; }
+    .status { margin-top: 1rem; padding: 0.75rem; border-radius: 6px; display: inline-block; font-size: 0.9rem; }
+    .status.ok { background: #dcfce7; color: #166534; }
+    .status.error { background: #fee2e2; color: #991b1b; }
+    .hint { font-size: 0.9rem; color: #555; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Python Mini-Camp</h1>
+    <nav>
+      <ul id="nav">
+        <!-- вкладки будут добавлены JS -->
+      </ul>
+    </nav>
+  </header>
+  <main>
+    <!-- уроки будут добавлены JS -->
+  </main>
+
+  <script>
+    // Контент курса
+    const lessons = [
+      {
+        id: 'intro',
+        title: 'Введение и print()',
+        theory: `
+          <p>В Python вывод на экран делается через <code>print()</code>.</p>
+          <pre><code>print("Привет, мир!")</code></pre>
+          <p>Задача: выведи фразу <code>"Hello, Python!"</code>.</p>
+        `,
+        testCode: (userCode) => {
+          // очень простая эвристика: ищем print с нужной строкой
+          return userCode.includes('print("Hello, Python!")') || userCode.includes("print('Hello, Python!')");
+        },
+        hint: 'Используй print("Hello, Python!")'
+      },
+      {
+        id: 'variables',
+        title: 'Переменные и типы',
+        theory: `
+          <p>Переменные хранят значения:</p>
+          <pre><code>name = "Alice"
+age = 25
+is_ready = True</code></pre>
+          <p>Задача: создай переменную <code>city</code> со значением <code>"Moscow"</code> и выведи её через <code>print(city)</code>.</p>
+        `,
+        testCode: (userCode) => {
+          return userCode.includes('city = "Moscow"') || userCode.includes("city = 'Moscow'");
+        },
+        hint: 'city = "Moscow"\nprint(city)'
+      },
+      {
+        id: 'if',
+        title: 'Условные операторы',
+        theory: `
+          <p>Условие <code>if</code> проверяет истинность:</p>
+          <pre><code>x = 10
+if x > 5:
+    print("Больше 5")</code></pre>
+          <p>Задача: если переменная <code>score</code> равна 85, выведи <code>"Отлично!"</code>. Иначе — <code>"Попробуй ещё"</code>.</p>
+        `,
+        testCode: (userCode) => {
+          return (userCode.includes('if score == 85:') || userCode.includes('if score==85:')) &&
+                 (userCode.includes('"Отлично!"') || userCode.includes("'Отлично!'"));
+        },
+        hint: 'score = 85\nif score == 85:\n    print("Отлично!")\nelse:\n    print("Попробуй ещё")'
+      },
+      {
+        id: 'loops',
+        title: 'Циклы for',
+        theory: `
+          <p>Цикл <code>for</code> перебирает элементы:</p>
+          <pre><code>for i in range(3):
+    print(i)</code></pre>
+          <p>Задача: используй <code>for</code>, чтобы вывести числа от 0 до 4 (каждое на новой строке).</p>
+        `,
+        testCode: (userCode) => {
+          return userCode.includes('for') && (userCode.includes('range(5)') || userCode.includes('range(0, 5)'));
+        },
+        hint: 'for i in range(5):\n    print(i)'
+      }
+    ];
+
+    const navEl = document.getElementById('nav');
+    const mainEl = document.getElementById('main');
+
+    // Рендер навигации
+    lessons.forEach((l, i) => {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.textContent = l.title;
+      a.onclick = () => switchLesson(i);
+      if (i === 0) a.classList.add('active');
+      li.appendChild(a);
+      navEl.appendChild(li);
+    });
+
+    // Рендер уроков
+    lessons.forEach((l, idx) => {
+      const lessonEl = document.createElement('div');
+      lessonEl.id = `lesson-${l.id}`;
+      lessonEl.className = 'lesson' + (idx === 0 ? ' active' : '');
+      lessonEl.innerHTML = `
+        <div class="grid">
+          <div class="panel">
+            <h2>Теория: ${l.title}</h2>
+            <div class="theory-content">${l.theory}</div>
+          </div>
+          <div class="panel">
+            <h2>Редактор кода</h2>
+            <textarea id="code-${l.id}" placeholder="Вставь свой код на Python здесь"></textarea>
+            <button onclick="runCheck('${l.id}')">Проверить</button>
+            <div id="result-${l.id}" class="status" style="display:none;"></div>
+            <div class="hint">Подсказка: ${l.hint}</div>
+          </div>
+        </div>
+      `;
+      mainEl.appendChild(lessonEl);
+    });
+
+    function switchLesson(idx) {
+      document.querySelectorAll('.lesson').forEach((el, i) => el.classList.toggle('active', i === idx));
+      document.querySelectorAll('nav a').forEach((a, i) => a.classList.toggle('active', i === idx));
+    }
+
+    window.runCheck = function(id) {
+      const textarea = document.getElementById(`code-${id}`);
+      const resultBox = document.getElementById(`result-${id}`);
+      resultBox.style.display = 'block';
+      resultBox.className = 'status';
+
+      const userCode = textarea.value.trim();
+      if (!userCode) {
+        resultBox.textContent = 'Введите код!';
+        resultBox.classList.add('error');
+        return;
+      }
+
+      // Находим урок по id
+      const lesson = lessons.find(l => l.id === id);
+      if (!lesson) {
+        resultBox.textContent = 'Ошибка урока';
+        resultBox.classList.add('error');
+        return;
+      }
+
+      // Простая проверка без реального запуска Python
+      if (lesson.testCode(userCode)) {
+        resultBox.textContent = '✅ Задача решена! Молодец.';
+        resultBox.classList.add('ok');
+      } else {
+        resultBox.textContent = '❌ Пока не подходит. Проверь синтаксис и условие задачи.';
+        resultBox.classList.add('error');
+      }
+    };
+  </script>
+</body>
+</html>
