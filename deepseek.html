@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python‑аналог freeCodeCamp</title>
+    <!-- Подключаем Pyodide для выполнения Python в браузере -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+        }
+        body {
+            background: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        /* Шапка */
+        .header {
+            background: #0a0e1a;
+            color: white;
+            padding: 0.7rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 1.4rem;
+            letter-spacing: 0.5px;
+        }
+        .logo span {
+            background: #306998;
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            color: #ffd43b;
+            font-weight: 700;
+            box-shadow: 0 0 10px #ffd43b88;
+        }
+        .progress-badge {
+            background: #1e2434;
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #b0c4de;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .progress-badge i {
+            color: #ffd43b;
+            font-style: normal;
+        }
+        /* Главный контейнер */
+        .app {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        /* Левая панель — список задач */
+        .sidebar {
+            width: 300px;
+            background: #ffffff;
+            border-right: 1px solid #d0d7de;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 1.2rem 0.8rem;
+            gap: 12px;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.02);
+        }
+        .sidebar h2 {
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #57606a;
+            margin-bottom: 6px;
+            padding-left: 10px;
+        }
+        .task-btn {
+            background: #f6f8fa;
+            border: 1px solid #d0d7de;
+            border-radius: 14px;
+            padding: 16px 18px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #1f2328;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+        .task-btn:hover {
+            background: #eef2f6;
+            border-color: #96a7b7;
+        }
+        .task-btn.active {
+            background: #0a0e1a;
+            border-color: #0a0e1a;
+            color: white;
+            box-shadow: 0 6px 14px rgba(10,14,26,0.25);
+        }
+        .task-btn.active .task-number {
+            background: #306998;
+            color: #ffd43b;
+        }
+        .task-number {
+            background: #e1e4e8;
+            color: #24292f;
+            font-weight: 700;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+        .task-btn.completed .task-number {
+            background: #2ea44f;
+            color: white;
+        }
+        .task-btn.completed .task-number::after {
+            content: "✓";
+            font-size: 1rem;
+        }
+        .task-btn.completed .task-number span {
+            display: none;
+        }
+        /* Основная область */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #f0f2f5;
+        }
+        .workspace {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            gap: 1px;
+            background: #d0d7de;
+        }
+        /* Левая часть рабочей области — задание */
+        .instruction {
+            width: 38%;
+            background: #ffffff;
+            padding: 2rem 1.8rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+        .instruction h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #0a0e1a;
+            letter-spacing: -0.5px;
+            line-height: 1.3;
+        }
+        .badge {
+            background: #ffd43b;
+            color: #0a0e1a;
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            align-self: flex-start;
+        }
+        .description {
+            font-size: 1rem;
+            line-height: 1.7;
+            color: #2c3e50;
+            background: #f8fafc;
+            padding: 1.2rem 1.4rem;
+            border-radius: 18px;
+            border-left: 6px solid #306998;
+        }
+        .description code {
+            background: #e9ecf0;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.9rem;
+            color: #b22222;
+        }
+        .hint {
+            background: #fff9e6;
+            border: 1px solid #ffe08a;
+            padding: 1rem 1.4rem;
+            border-radius: 16px;
+            font-size: 0.95rem;
+            color: #5f4b00;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .hint i {
+            font-style: normal;
+            font-size: 1.2rem;
+        }
+        /* Правая часть — редактор и вывод */
+        .editor-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #1e1e2f;
+        }
+        .editor-header {
+            background: #0a0e1a;
+            padding: 0.8rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #b0c4de;
+            border-bottom: 1px solid #2d3348;
+        }
+        .editor-header .filename {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .editor-header .filename i {
+            color: #ffd43b;
+            font-style: normal;
+        }
+        .actions {
+            display: flex;
+            gap: 12px;
+        }
+        .btn {
+            background: #306998;
+            color: white;
+            border: none;
+            padding: 8px 22px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 10px rgba(48,105,152,0.3);
+        }
+        .btn:hover {
+            background: #3f7cb0;
+            transform: translateY(-1px);
+        }
+        .btn:active {
+            transform: translateY(1px);
+        }
+        .btn-secondary {
+            background: #2d3348;
+            box-shadow: none;
+            color: #cdd9e5;
+        }
+        .btn-secondary:hover {
+            background: #3b4259;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        /* Текстовое поле для кода */
+        #codeEditor {
+            width: 100%;
+            flex: 1;
+            background: #1e1e2f;
+            color: #e2e8f0;
+            border: none;
+            padding: 1.8rem;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 1rem;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+            tab-size: 4;
+            caret-color: #ffd43b;
+            overflow: auto;
+            white-space: pre;
+        }
+        #codeEditor::selection {
+            background: #30699888;
+        }
+        /* Вывод */
+        .output-panel {
+            height: 220px;
+            background: #0d1117;
+            border-top: 1px solid #2d3348;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .output-header {
+            background: #0a0e1a;
+            padding: 0.6rem 1.5rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #8b9eb0;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #1e2434;
+        }
+        .output-content {
+            flex: 1;
+            padding: 1rem 1.8rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            color: #b0c4de;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .output-content .success {
+            color: #7ee787;
+        }
+        .output-content .error {
+            color: #ff7b72;
+        }
+        .output-content .info {
+            color: #79c0ff;
+        }
+        /* Мобильная адаптация */
+        @media (max-width: 900px) {
+            .workspace {
+                flex-direction: column;
+            }
+            .instruction {
+                width: 100%;
+                max-height: 40vh;
+            }
+            .sidebar {
+                width: 220px;
+            }
+        }
+        /* Скроллбар */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e1e2f;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b4259;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #5a637e;
+        }
+        .sidebar::-webkit-scrollbar-track {
+            background: #f0f2f5;
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #c0c8d0;
+        }
+        /* Анимация загрузки */
+        .loading-python {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #ffd43b;
+            font-size: 0.9rem;
+        }
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 3px solid #306998;
+            border-top-color: #ffd43b;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <span>Py</span>Camp
+        </div>
+        <div class="progress-badge" id="progressDisplay">
+            <i>⚡</i> <span id="progressText">0/10</span> уроков
+        </div>
+    </div>
+
+    <div class="app">
+        <!-- Список заданий -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Заполняется через JS -->
+        </aside>
+
+        <!-- Основная область -->
+        <main class="main">
+            <div class="workspace">
+                <!-- Левая колонка: инструкция -->
+                <section class="instruction" id="instructionPanel">
+                    <div class="badge" id="taskBadge">Урок 1</div>
+                    <h1 id="taskTitle">Загрузка...</h1>
+                    <div class="description" id="taskDescription"></div>
+                    <div class="hint" id="taskHint">
+                        <i>💡</i>
+                        <span id="hintText"></span>
+                    </div>
+                </section>
+
+                <!-- Правая колонка: редактор + вывод -->
+                <section class="editor-area">
+                    <div class="editor-header">
+                        <div class="filename">
+                            <i>🐍</i> main.py
+                        </div>
+                        <div class="actions">
+                            <button class="btn btn-secondary" id="resetBtn" title="Сбросить код к исходному">↺ Сброс</button>
+                            <button class="btn" id="runBtn">▶ Запустить</button>
+                            <button class="btn" id="checkBtn">✓ Проверить</button>
+                        </div>
+                    </div>
+                    <textarea id="codeEditor" spellcheck="false" placeholder="# Напишите код здесь..."></textarea>
+                    <div class="output-panel">
+                        <div class="output-header">
+                            <span>Вывод</span>
+                            <span id="pythonStatus">⏳ Загрузка Python...</span>
+                        </div>
+                        <div class="output-content" id="outputContent">
+                            > Готов к работе.
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        (function() {
+            // ==================== ДАННЫЕ КУРСА ====================
+            const tasks = [
+                {
+                    id: 0,
+                    title: "Привет, Python!",
+                    description: `Напишите программу, которая выводит на экран фразу <code>Привет, мир!</code>.<br><br>Используйте функцию <code>print()</code> и не забудьте про кавычки.`,
+                    hint: `print("Привет, мир!")`,
+                    initialCode: `# Напишите ваш код ниже\n`,
+                    validate: (output, code) => {
+                        const trimmed = output.trim();
+                        return trimmed === "Привет, мир!" || trimmed === "Привет, мир!";
+                    },
+                    successMessage: "Отлично! Вы познали дзен print()."
+                },
+                {
+                    id: 1,
+                    title: "Сумма двух чисел",
+                    description: `Создайте две переменные <code>a = 5</code> и <code>b = 7</code>. Выведите их сумму.<br><br>Ожидаемый вывод: <code>12</code>`,
+                    hint: `a = 5\nb = 7\nprint(a + b)`,
+                    initialCode: `# Создайте переменные и выведите сумму\n`,
+                    validate: (output) => output.trim() === "12",
+                    successMessage: "Верно! Переменные и арифметика — база."
+                },
+                {
+                    id: 2,
+                    title: "Чётное или нечётное",
+                    description: `Напишите программу, которая проверяет число <code>n = 8</code>.<br>Если число чётное — выведите <code>Чётное</code>, иначе <code>Нечётное</code>.<br><br>Используйте <code>if</code> и оператор <code>%</code>.`,
+                    hint: `n = 8\nif n % 2 == 0:\n    print("Чётное")\nelse:\n    print("Нечётное")`,
+                    initialCode: `n = 8\n# Ваш код\n`,
+                    validate: (output) => output.trim() === "Чётное",
+                    successMessage: "Условия — это важно! Ты справился."
+                },
+                {
+                    id: 3,
+                    title: "Цикл for: сумма чисел",
+                    description: `Выведите сумму чисел от 1 до 10 включительно.<br><br>Ожидаемый результат: <code>55</code>`,
+                    hint: `total = 0\nfor i in range(1, 11):\n    total += i\nprint(total)`,
+                    initialCode: `# Используйте цикл for\n`,
+                    validate: (output) => output.trim() === "55",
+                    successMessage: "Циклы — мощный инструмент. Отлично!"
+                },
+                {
+                    id: 4,
+                    title: "Функция приветствия",
+                    description: `Напишите функцию <code>greet(name)</code>, которая возвращает строку <code>"Привет, {name}!"</code>.<br>Вызовите её с аргументом <code>"Анна"</code> и выведите результат.`,
+                    hint: `def greet(name):\n    return f"Привет, {name}!"\nprint(greet("Анна"))`,
+                    initialCode: `# Определите функцию greet\n`,
+                    validate: (output) => output.trim() === "Привет, Анна!",
+                    successMessage: "Функции делают код переиспользуемым. Супер!"
+                },
+                {
+                    id: 5,
+                    title: "Списки: сумма элементов",
+                    description: `Дан список <code>numbers = [10, 20, 30, 40, 50]</code>. Выведите сумму всех элементов.<br><br>Ожидаемый вывод: <code>150</code>`,
+                    hint: `numbers = [10, 20, 30, 40, 50]\nprint(sum(numbers))`,
+                    initialCode: `numbers = [10, 20, 30, 40, 50]\n# Ваш код\n`,
+                    validate: (output) => output.trim() === "150",
+                    successMessage: "Списки и встроенные функции — огонь!"
+                },
+                {
+                    id: 6,
+                    title: "Словари: возраст",
+                    description: `Создайте словарь <code>person = {"name": "Иван", "age": 30}</code>.<br>Выведите значение ключа <code>age</code>.<br><br>Ожидаемый вывод: <code>30</code>`,
+                    hint: `person = {"name": "Иван", "age": 30}\nprint(person["age"])`,
+                    initialCode: `# Создайте словарь и выведите возраст\n`,
+                    validate: (output) => output.trim() === "30",
+                    successMessage: "Словари — мощь. Ты справился!"
+                },
+                {
+                    id: 7,
+                    title: "Обработка исключений",
+                    description: `Напишите код, который пытается поделить <code>10 / 0</code> и перехватывает исключение <code>ZeroDivisionError</code>, выводя <code>"Деление на ноль!"</code>.`,
+                    hint: `try:\n    result = 10 / 0\nexcept ZeroDivisionError:\n    print("Деление на ноль!")`,
+                    initialCode: `# Используйте try/except\n`,
+                    validate: (output) => output.trim() === "Деление на ноль!",
+                    successMessage: "Обработка ошибок — признак профессионала."
+                },
+                {
+                    id: 8,
+                    title: "Генератор списка",
+                    description: `Используя list comprehension, создайте список квадратов чисел от 1 до 5 и выведите его.<br><br>Ожидаемый вывод: <code>[1, 4, 9, 16, 25]</code>`,
+                    hint: `squares = [x**2 for x in range(1, 6)]\nprint(squares)`,
+                    initialCode: `# List comprehension\n`,
+                    validate: (output) => output.trim() === "[1, 4, 9, 16, 25]",
+                    successMessage: "Генераторы — лаконично и красиво!"
+                },
+                {
+                    id: 9,
+                    title: "Классы и объекты",
+                    description: `Создайте класс <code>Dog</code> с атрибутами <code>name</code> и <code>age</code>. Создайте объект <code>dog = Dog("Бобик", 3)</code> и выведите его имя.<br><br>Ожидаемый вывод: <code>Бобик</code>`,
+                    hint: `class Dog:\n    def __init__(self, name, age):\n        self.name = name\n        self.age = age\n\ndog = Dog("Бобик", 3)\nprint(dog.name)`,
+                    initialCode: `# Определите класс Dog\n`,
+                    validate: (output) => output.trim() === "Бобик",
+                    successMessage: "ООП — вершина мастерства. Поздравляю!"
+                }
+            ];
+
+            // ==================== СОСТОЯНИЕ ====================
+            let pyodide = null;
+            let currentTaskId = 0;
+            let completedTasks = JSON.parse(localStorage.getItem('pycamp_completed')) || [];
+            let taskCodes = JSON.parse(localStorage.getItem('pycamp_codes')) || {};
+            let isPythonReady = false;
+            let isRunning = false;
+
+            // DOM элементы
+            const sidebar = document.getElementById('sidebar');
+            const taskBadge = document.getElementById('taskBadge');
+            const taskTitle = document.getElementById('taskTitle');
+            const taskDescription = document.getElementById('taskDescription');
+            const hintText = document.getElementById('hintText');
+            const codeEditor = document.getElementById('codeEditor');
+            const outputContent = document.getElementById('outputContent');
+            const runBtn = document.getElementById('runBtn');
+            const checkBtn = document.getElementById('checkBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const progressText = document.getElementById('progressText');
+            const pythonStatus = document.getElementById('pythonStatus');
+
+            // ==================== ВСПОМОГАТЕЛЬНЫЕ ====================
+            function updateProgress() {
+                const done = completedTasks.length;
+                progressText.textContent = `${done}/${tasks.length}`;
+            }
+
+            function saveState() {
+                localStorage.setItem('pycamp_completed', JSON.stringify(completedTasks));
+                localStorage.setItem('pycamp_codes', JSON.stringify(taskCodes));
+            }
+
+            function getCurrentCode() {
+                return taskCodes[currentTaskId] !== undefined
+                    ? taskCodes[currentTaskId]
+                    : tasks[currentTaskId].initialCode;
+            }
+
+            function setCurrentCode(code) {
+                taskCodes[currentTaskId] = code;
+                saveState();
+            }
+
+            // ==================== ОТРИСОВКА СПИСКА ЗАДАНИЙ ====================
+            function renderSidebar() {
+                sidebar.innerHTML = '<h2>📘 Уроки</h2>';
+                tasks.forEach((task, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = `task-btn ${idx === currentTaskId ? 'active' : ''} ${completedTasks.includes(idx) ? 'completed' : ''}`;
+                    btn.dataset.id = idx;
+
+                    const numberDiv = document.createElement('div');
+                    numberDiv.className = 'task-number';
+                    if (completedTasks.includes(idx)) {
+                        // просто галочка через CSS
+                    } else {
+                        numberDiv.textContent = idx + 1;
+                    }
+                    // для completed внутренний span не нужен
+                    btn.appendChild(numberDiv);
+
+                    const textSpan = document.createElement('span');
+                    textSpan.textContent = task.title;
+                    btn.appendChild(textSpan);
+
+                    btn.addEventListener('click', () => {
+                        if (isRunning) return;
+                        switchTask(idx);
+                    });
+                    sidebar.appendChild(btn);
+                });
+            }
+
+            // ==================== ПЕРЕКЛЮЧЕНИЕ ЗАДАНИЯ ====================
+            function switchTask(id) {
+                if (id === currentTaskId) return;
+                // сохраняем текущий код
+                setCurrentCode(codeEditor.value);
+                currentTaskId = id;
+
+                // обновляем UI
+                const task = tasks[id];
+                taskBadge.textContent = `Урок ${id + 1}`;
+                taskTitle.textContent = task.title;
+                taskDescription.innerHTML = task.description;
+                hintText.textContent = task.hint;
+
+                // код
+                codeEditor.value = getCurrentCode();
+
+                // вывод сбрасываем
+                outputContent.innerHTML = '> Готов к работе.';
+
+                // обновляем активные кнопки
+                document.querySelectorAll('.task-btn').forEach(btn => {
+                    const btnId = parseInt(btn.dataset.id);
+                    btn.classList.toggle('active', btnId === id);
+                    btn.classList.toggle('completed', completedTasks.includes(btnId));
+                });
+
+                updateProgress();
+                saveState();
+            }
+
+            // ==================== ВЫВОД ====================
+            function clearOutput() {
+                outputContent.innerHTML = '';
+            }
+
+            function appendOutput(text, type = 'normal') {
+                const span = document.createElement('span');
+                if (type === 'error') span.className = 'error';
+                else if (type === 'success') span.className = 'success';
+                else if (type === 'info') span.className = 'info';
+                span.textContent = text;
+                outputContent.appendChild(span);
+                outputContent.appendChild(document.createTextNode('\n'));
+                outputContent.scrollTop = outputContent.scrollHeight;
+            }
+
+            // ==================== ЗАПУСК PYTHON КОДА ====================
+            async function runPythonCode(code) {
+                if (!isPythonReady || !pyodide) {
+                    appendOutput('⏳ Python ещё загружается. Подождите...', 'error');
+                    return { output: '', error: 'Python not ready' };
+                }
+
+                // Перехватываем stdout
+                let stdout = '';
+                pyodide.setStdout({
+                    batched: (str) => {
+                        stdout += str + '\n';
+                        appendOutput(str);
+                    }
+                });
+                pyodide.setStderr({
+                    batched: (str) => {
+                        appendOutput(str, 'error');
+                    }
+                });
+
+                try {
+                    // Очищаем предыдущий вывод
+                    // Запускаем код
+                    const result = await pyodide.runPythonAsync(code);
+                    if (result !== undefined) {
+                        appendOutput(String(result));
+                    }
+                    return { output: stdout, error: null };
+                } catch (err) {
+                    appendOutput(`❌ Ошибка: ${err.message}`, 'error');
+                    return { output: stdout, error: err.message };
+                }
+            }
+
+            // ==================== ПРОВЕРКА ЗАДАНИЯ ====================
+            async function checkTask() {
+                if (isRunning) return;
+                if (!isPythonReady) {
+                    appendOutput('⏳ Python ещё не загружен. Пожалуйста, подождите.', 'error');
+                    return;
+                }
+
+                isRunning = true;
+                runBtn.disabled = true;
+                checkBtn.disabled = true;
+
+                clearOutput();
+                appendOutput('> Запуск проверки...', 'info');
+
+                const code = codeEditor.value;
+                // Сохраняем код
+                setCurrentCode(code);
+
+                // Запускаем
+                const { output, error } = await runPythonCode(code);
+
+                if (error) {
+                    appendOutput('❌ Проверка не пройдена: ошибка выполнения.', 'error');
+                    isRunning = false;
+                    runBtn.disabled = false;
+                    checkBtn.disabled = false;
+                    return;
+                }
+
+                const task = tasks[currentTaskId];
+                const isValid = task.validate(output, code);
+
+                if (isValid) {
+                    appendOutput('✅ Задание выполнено верно!', 'success');
+                    if (!completedTasks.includes(currentTaskId)) {
+                        completedTasks.push(currentTaskId);
+                        saveState();
+                        updateProgress();
+                        renderSidebar();
+                        // помечаем текущую кнопку как выполненную
+                        document.querySelectorAll('.task-btn').forEach(btn => {
+                            const btnId = parseInt(btn.dataset.id);
+                            btn.classList.toggle('completed', completedTasks.includes(btnId));
+                        });
+                    }
+                    if (task.successMessage) {
+                        appendOutput(`💬 ${task.successMessage}`, 'info');
+                    }
+                } else {
+                    appendOutput('❌ Результат не соответствует ожидаемому. Попробуйте ещё раз.', 'error');
+                    appendOutput(`📌 Ожидалось: ${getExpectedOutput(task)}`, 'info');
+                }
+
+                isRunning = false;
+                runBtn.disabled = false;
+                checkBtn.disabled = false;
+            }
+
+            function getExpectedOutput(task) {
+                // небольшой хак для отображения ожидаемого вывода
+                const map = {
+                    0: "Привет, мир!",
+                    1: "12",
+                    2: "Чётное",
+                    3: "55",
+                    4: "Привет, Анна!",
+                    5: "150",
+                    6: "30",
+                    7: "Деление на ноль!",
+                    8: "[1, 4, 9, 16, 25]",
+                    9: "Бобик"
+                };
+                return map[task.id] || "см. описание";
+            }
+
+            // ==================== ИНИЦИАЛИЗАЦИЯ PYODIDE ====================
+            async function initPython() {
+                try {
+                    pyodide = await loadPyodide({
+                        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"
+                    });
+                    isPythonReady = true;
+                    pythonStatus.innerHTML = '✅ Python готов';
+                    appendOutput('🐍 Python успешно загружен!', 'success');
+                } catch (err) {
+                    pythonStatus.innerHTML = '❌ Ошибка загрузки';
+                    appendOutput('Не удалось загрузить Python: ' + err.message, 'error');
+                }
+            }
+
+            // ==================== ЗАГРУЗКА ЗАДАНИЯ ====================
+            function loadTask(id) {
+                currentTaskId = id;
+                const task = tasks[id];
+                taskBadge.textContent = `Урок ${id + 1}`;
+                taskTitle.textContent = task.title;
+                taskDescription.innerHTML = task.description;
+                hintText.textContent = task.hint;
+                codeEditor.value = getCurrentCode();
+                outputContent.innerHTML = '> Готов к работе.';
+                renderSidebar();
+                updateProgress();
+            }
+
+            // ==================== ОБРАБОТЧИКИ ====================
+            runBtn.addEventListener('click', async () => {
+                if (isRunning) return;
+                if (!isPythonReady) {
+                    appendOutput('⏳ Python ещё загружается. Пожалуйста, подождите...', 'error');
+                    return;
+                }
+                isRunning = true;
+                runBtn.disabled = true;
+                checkBtn.disabled = true;
+
+                clearOutput();
+                appendOutput('> Запуск...', 'info');
+                const code = codeEditor.value;
+                setCurrentCode(code);
+                await runPythonCode(code);
+
+                isRunning = false;
+                runBtn.disabled = false;
+                checkBtn.disabled = false;
+            });
+
+            checkBtn.addEventListener('click', checkTask);
+
+            resetBtn.addEventListener('click', () => {
+                if (isRunning) return;
+                const task = tasks[currentTaskId];
+                if (confirm('Сбросить код к исходному для этого урока?')) {
+                    codeEditor.value = task.initialCode;
+                    setCurrentCode(task.initialCode);
+                    outputContent.innerHTML = '> Код сброшен.';
+                }
+            });
+
+            // Автосохранение при редактировании
+            codeEditor.addEventListener('input', () => {
+                setCurrentCode(codeEditor.value);
+            });
+
+            //горячие клавиши Ctrl+Enter для запуска
+            codeEditor.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    runBtn.click();
+                }
+            });
+
+            // ==================== СТАРТ ====================
+            async function init() {
+                // Загружаем сохранённые коды
+                if (Object.keys(taskCodes).length === 0) {
+                    tasks.forEach((t, i) => { taskCodes[i] = t.initialCode; });
+                }
+
+                // Проверим, что все задачи имеют код
+                tasks.forEach((t, i) => {
+                    if (taskCodes[i] === undefined) taskCodes[i] = t.initialCode;
+                });
+
+                // Если completedTasks содержит невалидные id, отфильтруем
+                completedTasks = completedTasks.filter(id => id >= 0 && id < tasks.length);
+
+                loadTask(0);
+                updateProgress();
+
+                // Инициализация Python
+                await initPython();
+            }
+
+            init();
+        })();
+    </script>
+</body>
+</html>
